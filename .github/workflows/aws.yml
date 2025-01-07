@@ -49,7 +49,11 @@ jobs:
         run: aws s3 sync target s3://${{ secrets.AWS_S3_BUCKET_NAME }} --exclude "*" --include "*.jar" --delete
 
       - name: Deploy to AWS EC2
-        run: aws s3 cp s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$JAR_NAME $JAR_NAME
+        run: aws ssm send-command \
+          --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"aws s3 cp s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$JAR_NAME $JAR_NAME\"]}" \
+          --region ${{ secrets.AWS_REGION }}
         env:
           JAR_NAME: ${{ env.JAR_NAME }}
 
