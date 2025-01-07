@@ -27,8 +27,8 @@ jobs:
         run: ./mvnw package
 
       - name: Get Artifact Name
-        run: JAR_FILE=$(find ./target -type f -name "*.jar") \
-             JAR_NAME=$(basename "$JAR_FILE") \
+        run: JAR_FILE=$(find ./target -type f -name "*.jar") 
+             JAR_NAME=$(basename "$JAR_FILE") 
              echo "JAR_NAME=$JAR_NAME" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
