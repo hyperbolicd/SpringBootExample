@@ -55,7 +55,7 @@ jobs:
           aws ssm send-command \
           --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
           --document-name "AWS-RunShellScript" \
-          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"aws s3 cp s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$JAR_NAME $JAR_NAME\"]}" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./deploy.sh -s ${{ secrets.AWS_S3_BUCKET_NAME }} -a $JAR_NAME\"]}" \
           --region ${{ secrets.AWS_REGION }}
         env:
           JAR_NAME: ${{ env.JAR_NAME }}
@@ -65,5 +65,5 @@ jobs:
           aws ssm send-command \
           --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
           --document-name "AWS-RunShellScript" \
-          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start-silent.sh\"]}" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start_silent.sh\"]}" \
           --region ${{ secrets.AWS_REGION }}
