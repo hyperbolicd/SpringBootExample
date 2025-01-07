@@ -1,0 +1,60 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Java Setup
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ vars.JAVA_VERSION }}
+
+      - name: App Build
+        run: ./mvnw package
+
+      - name: Get Artifact Name
+        run: JAR_FILE=$(find ./target -type f -name "*.jar") \
+             JAR_NAME=$(basename $JAR_FILE) \
+             echo "JAR_NAME=$JAR_NAME" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Stop application
+        run: aws ssm send-command \
+            --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./stop.sh\"]}" \
+            --region ${{ secrets.AWS_REGION }}
+
+      - name: Upload to AWS S3
+        run: aws s3 sync target s3://${{ secrets.AWS_S3_BUCKET_NAME }} --exclude "*" --include "*.jar" --delete
+
+      - name: Deploy to AWS EC2
+        run: aws s3 cp s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$JAR_NAME $JAR_NAME
+        env:
+          JAR_NAME: ${{ env.JAR_NAME }}
+
+      - name: Start application
+        run: aws ssm send-command \
+          --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start-silent.sh\"]}" \
+          --region ${{ secrets.AWS_REGION }}
