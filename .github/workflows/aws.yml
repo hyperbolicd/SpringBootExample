@@ -20,6 +20,7 @@ jobs:
       - name: Java Setup
         uses: actions/setup-java@v4
         with:
+          distribution: ${{ vars.JAVA_DISTRIBUTION }}
           java-version: ${{ vars.JAVA_VERSION }}
 
       - name: App Build
