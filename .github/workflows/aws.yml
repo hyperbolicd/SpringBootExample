@@ -27,9 +27,10 @@ jobs:
         run: ./mvnw package
 
       - name: Get Artifact Name
-        run: JAR_FILE=$(find ./target -type f -name "*.jar") 
-             JAR_NAME=$(basename "$JAR_FILE") 
-             echo "JAR_NAME=$JAR_NAME" >> $GITHUB_ENV
+        run: |
+          JAR_FILE=$(find ./target -type f -name "*.jar") 
+          JAR_NAME=$(basename "$JAR_FILE") 
+          echo "JAR_NAME=$JAR_NAME" >> $GITHUB_ENV
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -39,17 +40,19 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Stop application
-        run: aws ssm send-command \
-            --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
-            --document-name "AWS-RunShellScript" \
-            --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./stop.sh\"]}" \
-            --region ${{ secrets.AWS_REGION }}
+        run: |
+          aws ssm send-command \
+          --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
+          --document-name "AWS-RunShellScript" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./stop.sh\"]}" \
+          --region ${{ secrets.AWS_REGION }}
 
       - name: Upload to AWS S3
         run: aws s3 sync target s3://${{ secrets.AWS_S3_BUCKET_NAME }} --exclude "*" --include "*.jar" --delete
 
       - name: Deploy to AWS EC2
-        run: aws ssm send-command \
+        run: |
+          aws ssm send-command \
           --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
           --document-name "AWS-RunShellScript" \
           --parameters "{\"commands\":[\"cd /home/ec2-user\", \"aws s3 cp s3://${{ secrets.AWS_S3_BUCKET_NAME }}/$JAR_NAME $JAR_NAME\"]}" \
@@ -58,7 +61,8 @@ jobs:
           JAR_NAME: ${{ env.JAR_NAME }}
 
       - name: Start application
-        run: aws ssm send-command \
+        run: |
+          aws ssm send-command \
           --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
           --document-name "AWS-RunShellScript" \
           --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start-silent.sh\"]}" \
