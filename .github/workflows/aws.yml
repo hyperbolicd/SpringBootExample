@@ -65,5 +65,5 @@ jobs:
           aws ssm send-command \
           --targets "Key=instanceIds,Values=${{ secrets.AWS_EC2_INSTANCE_ID }}" \
           --document-name "AWS-RunShellScript" \
-          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start_silent.sh\"]}" \
+          --parameters "{\"commands\":[\"cd /home/ec2-user\", \"./start_silent.sh -a $JAR_NAME\"]}" \
           --region ${{ secrets.AWS_REGION }}
